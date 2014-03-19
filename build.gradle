@@ -1,0 +1,12 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	compile group: 'com.ning', name: 'async-http-client', version: '1.6.3'
+}
+
+eclipse.classpath.defaultOutputDir = file('.eclipse')
