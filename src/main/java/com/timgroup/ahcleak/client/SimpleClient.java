@@ -18,7 +18,7 @@ public class SimpleClient {
         Builder config = new AsyncHttpClientConfig.Builder().setAllowPoolingConnection(allowPooling).setMaximumConnectionsPerHost(
                 maximumConnectionsPerHost);
         client = new AsyncHttpClient(config.build());
-        perRequestConfig = new PerRequestConfig(client.getConfig().getProxyServer(), timeoutSeconds * 1000);
+        perRequestConfig = new PerRequestConfig(null, timeoutSeconds * 1000);
     }
 
     public <T> ListenableFuture<T> get(String url, AsyncHandler<T> handler) throws IOException {
