@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'application'
 apply plugin: 'eclipse'
 
 repositories {
@@ -7,6 +8,16 @@ repositories {
 
 dependencies {
 	compile group: 'com.ning', name: 'async-http-client', version: '1.6.3'
+	runtime group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.6'
+}
+
+mainClassName = "com.timgroup.ahcleak.client.RunClient"
+startScripts.applicationName = "run"
+run.debug = true
+
+task runServer(type: JavaExec) {
+    classpath = run.classpath
+    main = "com.timgroup.ahcleak.server.RunServer"
 }
 
 eclipse.classpath.defaultOutputDir = file('.eclipse')
