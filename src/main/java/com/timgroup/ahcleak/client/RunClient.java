@@ -40,11 +40,6 @@ public class RunClient {
             }
         }
 
-        System.out.println(threadCount);
-        System.out.println(requestCount);
-        System.out.println(haltOnLeak);
-        System.out.println(ignoreErrorLeak);
-
         main(threadCount, requestCount, haltOnLeak, ignoreErrorLeak);
     }
 
