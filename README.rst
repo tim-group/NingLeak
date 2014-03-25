@@ -10,6 +10,12 @@ With Gradle (http://www.gradle.org/). We are using version 1.7. To build, simply
 
     gradle clean install
 
+By default, the code will build with version 1.6.3 of AsyncHttpClient, because this is what we are currently using. To build against a different version, supply the project parameter ``asyncHttpClientVersion``::
+
+    gradle -PasyncHttpClientVersion=1.7.18 clean install
+
+To build against the very latest version, use the version string "+".
+
 How do i use it?
 ================
 
@@ -46,6 +52,8 @@ Where is the leak?
 We believe there is a race between completion of an HTTP request and the enqueuing of a reaper for the request. If a request completes before the reaper is enqueued, the reaper will never terminate. The reaper has a reference to the request's ``AsyncHandler``, so this leads to a leak of user-supplied ``AsyncHandler`` implementations, as well as various objects internal to AsyncHttpClient. 
 
 In AsyncHttpClient 1.6.3, the racing code is in ``com.ning.http.client.providers.netty.NettyAsyncHttpProvider``, between the passage concerning reapers starting on line 445, and the asynchronous consequences of the passage before it.
+
+In AsyncHttpClient 1.8.x, there has been considerable refactoring; the corresponding code is at line 612 in the same class, and has a similar structure but quite different details. This version does not exhibit the leak.
 
 How can i see the leak?
 =======================

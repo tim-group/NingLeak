@@ -6,8 +6,10 @@ repositories {
     mavenCentral()
 }
 
+def asyncHttpClientVersion = hasProperty('asyncHttpClientVersion') ? asyncHttpClientVersion : '1.6.3'
+
 dependencies {
-	compile group: 'com.ning', name: 'async-http-client', version: '1.6.3'
+	compile group: 'com.ning', name: 'async-http-client', version: asyncHttpClientVersion
 	compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.6'
 
 	runtime group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.6'
