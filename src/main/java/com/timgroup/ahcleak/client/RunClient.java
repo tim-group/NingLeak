@@ -20,6 +20,7 @@ public class RunClient {
     public static void main(String[] args) throws InterruptedException {
         int threadCount = 100;
         int requestCount = 1000;
+        int gracePeriod = 60 * 1000;
         boolean haltOnLeak = false;
         boolean ignoreErrorLeak = false;
 
@@ -29,6 +30,8 @@ public class RunClient {
                 threadCount = Integer.parseInt(args[++i]);
             } else if (arg.equals("-r")) {
                 requestCount = Integer.parseInt(args[++i]);
+            } else if (arg.equals("-g")) {
+                gracePeriod = Integer.parseInt(args[++i]);
             } else if (arg.equals("-h")) {
                 haltOnLeak = true;
                 ignoreErrorLeak = false;
@@ -40,10 +43,10 @@ public class RunClient {
             }
         }
 
-        main(threadCount, requestCount, haltOnLeak, ignoreErrorLeak);
+        main(threadCount, requestCount, gracePeriod, haltOnLeak, ignoreErrorLeak);
     }
 
-    public static void main(int threadCount, int requestCount, boolean haltOnLeak, boolean ignoreErrorLeak) throws InterruptedException {
+    public static void main(int threadCount, int requestCount, int gracePeriod, boolean haltOnLeak, boolean ignoreErrorLeak) throws InterruptedException {
         silence(LoggerFactory.getLogger(NettyAsyncHttpProvider.class));
 
         int timeoutSeconds = 1;
@@ -71,12 +74,6 @@ public class RunClient {
             }
         }
 
-        long endTime = System.currentTimeMillis();
-
-        Thread.sleep((timeoutSeconds * 1000));
-        System.gc();
-        Thread.sleep(1000);
-
         int requestsMade = 0;
         int requestsCompleted = 0;
         int created = 0;
@@ -86,16 +83,27 @@ public class RunClient {
             created += thread.handlers.size();
         }
 
-        int live = created - collect(queue).size();
+        Set<Reference<? extends ResponseHandler>> collected = new HashSet<Reference<? extends ResponseHandler>>();
 
-        report(startTime, endTime, requestsMade, requestsCompleted, live, exceptions.size());
+        Thread.sleep((timeoutSeconds * 1000) + 500);
 
-        if (haltOnLeak && live > 0 && (!ignoreErrorLeak || exceptions.isEmpty())) {
-            System.out.println("halted");
-            Thread.sleep(Long.MAX_VALUE);
-        } else {
-            client.stop();
+        long endTime = System.currentTimeMillis();
+
+        drainAndReport(queue, collected, exceptions, startTime, endTime, requestsMade, requestsCompleted, created);
+
+        long now;
+        while ((created - collected.size()) > 0 && (now = System.currentTimeMillis()) < endTime + gracePeriod) {
+            Thread.sleep(10 * 1000);
+            drainAndReport(queue, collected, exceptions, startTime, now, requestsMade, requestsCompleted, created);
         }
+
+        if (created > collected.size()) {
+            System.out.println("leak!");
+            if (haltOnLeak && (!ignoreErrorLeak || exceptions.isEmpty())) {
+                Thread.sleep(Integer.MAX_VALUE);
+            }
+        }
+        client.stop();
     }
 
     private static void silence(Logger logger) {
@@ -117,23 +125,25 @@ public class RunClient {
         }
     }
 
-    private static <E> Set<Reference<? extends E>> collect(ReferenceQueue<E> queue) throws InterruptedException {
-        Set<Reference<? extends E>> collected = new HashSet<Reference<? extends E>>();
+    private static void drainAndReport(ReferenceQueue<ResponseHandler> queue, Set<Reference<? extends ResponseHandler>> collected, Set<Exception> exceptions, long startTime, long now, int requestsMade, int requestsCompleted, int created) throws InterruptedException {
+        System.gc();
+        Thread.sleep(1000);
+        drain(queue, collected);
+        System.out.println(String.format("elapsed = %d, made = %d, completed = %d, failed = %d, exceptions = %d, live = %d",
+                                         now - startTime,
+                                         requestsMade,
+                                         requestsCompleted,
+                                         requestsMade - requestsCompleted,
+                                         exceptions.size(),
+                                         created - collected.size()));
+    }
+
+    private static <E> Set<Reference<? extends E>> drain(ReferenceQueue<E> queue, Set<Reference<? extends E>> collected) {
         Reference<? extends E> c;
         while ((c = queue.poll()) != null) {
             collected.add(c);
         }
         return collected;
-    }
-
-    private static void report(long startTime, long endTime, int requestsMade, int requestsCompleted, int live, int numExceptions) {
-        System.out.print("elapsed = " + (endTime - startTime) + ", ");
-        System.out.print("made = " + requestsMade + ", ");
-        System.out.print("completed = " + requestsCompleted + ", ");
-        System.out.print("failed  = " + (requestsMade - requestsCompleted) + ", ");
-        System.out.print("live = " + live + ", ");
-        System.out.print("exceptions = " + numExceptions);
-        System.out.println();
     }
 
 }

@@ -33,6 +33,8 @@ If you run via the standalone script, you can give some flags:
     Use the given number of client threads (default 100)
 -r REQUEST-COUNT
     Make the given number of requests in each client thread (default 1000)
+-g GRACE-PERIOD
+	The time to wait before declaring objects to be leaked (default 1 minute)
 -h
     Halt if any objects are leaked
 -H
@@ -48,7 +50,7 @@ In AsyncHttpClient 1.6.3, the racing code is in ``com.ning.http.client.providers
 How can i see the leak?
 =======================
 
-Run the client until it reports a leak. We have observed that under load (100+ client threads, or fewer threads on a loaded machine), a significant number of requests fail, and a significant number of objects will be leaked. Under less load, all requests are successful, and while leaks are less common and smaller, they nonetheless occur. 
+Run the client until it reports a persistent leak. We have observed that under load (100+ client threads, or fewer threads on a loaded machine), a significant number of requests fail, and a significant number of objects will be leaked. Under less load, all requests are successful, and while leaks are less common and smaller, they nonetheless occur. 
 
 If you use the -h/-H flag, the client will halt if there is a leak to allow you to investigate further. 
 
