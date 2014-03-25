@@ -46,7 +46,9 @@ public class RunClient {
     public static void main(int threadCount, int requestCount, boolean haltOnLeak, boolean ignoreErrorLeak) throws InterruptedException {
         silence(LoggerFactory.getLogger(NettyAsyncHttpProvider.class));
 
-        SimpleClient client = new SimpleClient(true, threadCount * 2, 10);
+        int timeoutSeconds = 1;
+
+        SimpleClient client = new SimpleClient(true, threadCount * 2, timeoutSeconds);
 
         ReferenceQueue<ResponseHandler> queue = new ReferenceQueue<ResponseHandler>();
         Set<Exception> exceptions = Collections.synchronizedSet(new HashSet<Exception>());
@@ -71,6 +73,7 @@ public class RunClient {
 
         long endTime = System.currentTimeMillis();
 
+        Thread.sleep((timeoutSeconds * 1000));
         System.gc();
         Thread.sleep(1000);
 
